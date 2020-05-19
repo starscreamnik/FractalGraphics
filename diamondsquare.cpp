@@ -1,23 +1,23 @@
 #include "diamondsquare.h"
 
-DiamondSquare::DiamondSquare(int divisions, int size, double height) {
-    mSize = IsPowerOfTwo(size) ? size : GetPowerOfTwoUpper(size);
-    mDivisions = divisions > 0 ? divisions : mSize / 3;
-    mHeight = height > 0 ? height : 100;
+DiamondSquare::DiamondSquare(const int divisions, const double size, const double height) {
+    mDivisions = IsPowerOfTwo(divisions) ? divisions : GetPowerOfTwoUpper(divisions);
+    mSize = size >= 1.0 ? size : 10.0;
+    mHeight = height >= 1.0 ? height : 10.0;
 
-    printf("size: %d->%d,\ndivisions: %d->%d,\nheight: %f->%f\n",
+    printf("size: %f->%f,\ndivisions: %d->%d,\nheight: %f->%f\n",
         size, mSize, divisions, mDivisions, height, mHeight);
 
-    //mVertCount = (mDivisions + 1) * (mDivisions + 1);
-    mVerts.resize(mDivisions+1);
-    uvs.resize(mDivisions+1);
+    mVertCount = (mDivisions + 1) * (mDivisions + 1);
+    mVerts.resize(mDivisions + 1);
+    uvs.resize(mDivisions + 1);
     tris.resize(mDivisions * mDivisions * 6);
 
     printf("mVertCount: %d,\nmVerts.size: %d,\nuvs.size: %d,\ntris.size: %d\n",
         mVertCount, mVerts.size(), uvs.size(), tris.size());
 
     double halfSize = mSize / 2;
-    double divisionSize = (double)mSize / (double)mDivisions;
+    double divisionSize = mSize / (double)mDivisions;
     int trisOffset = 0;
 
     for (int i = 0; i <= mDivisions; i++) {
@@ -56,26 +56,16 @@ int DiamondSquare::GetPowerOfTwoUpper(unsigned int x) {
     return pow(2, ceil(log(x) / log(2)));
 }
 
-int DiamondSquare::GetRandomIntInRange(double from, double to) {
-    return rand() % (int)ceil(to) + (int)floor(from);
-}
-
-void DiamondSquare::WriteHeightMapToFile(ofstream& out) {
-    out << mVerts.size() << endl;
-
-    for (auto& row: mVerts) {
-        out << endl;
-        for (auto& col : row) {
-            out << round(col.x) << " " << round(col.y) << " " << round(col.z) << endl;
-        }
-    }
+double DiamondSquare::GetRandomDoubleInRange(double from, double to) {
+    double f = (double)rand() / RAND_MAX;
+    return from + f * (to - from);
 }
 
 void DiamondSquare::CreateHeightMap() {
-    mVerts[0][0].y                      = GetRandomIntInRange(-mHeight, mHeight);
-    mVerts[0][mDivisions].y             = GetRandomIntInRange(-mHeight, mHeight);
-    mVerts[mDivisions][0].y             = GetRandomIntInRange(-mHeight, mHeight);
-    mVerts[mDivisions][mDivisions].y    = GetRandomIntInRange(-mHeight, mHeight);
+    mVerts[0][0].y                      = GetRandomDoubleInRange(-mHeight, mHeight);
+    mVerts[0][mDivisions].y             = GetRandomDoubleInRange(-mHeight, mHeight);
+    mVerts[mDivisions][0].y             = GetRandomDoubleInRange(-mHeight, mHeight);
+    mVerts[mDivisions][mDivisions].y    = GetRandomDoubleInRange(-mHeight, mHeight);
 
     int iterations = (int)log2(mDivisions);
     int numSquares = 1;
@@ -88,7 +78,7 @@ void DiamondSquare::CreateHeightMap() {
             int col = 0;
             for (int k = 0; k < numSquares; k++) {
 
-                DiamondSquareTask(row, col, squareSize);
+                DiamondSquareTask(row, col, squareSize, mHeight);
                 col += squareSize;
             }
             row += squareSize;
@@ -99,7 +89,7 @@ void DiamondSquare::CreateHeightMap() {
     }
 }
 
-void DiamondSquare::DiamondSquareTask(int row, int col, int size) {
+void DiamondSquare::DiamondSquareTask(int row, int col, int size, double offset) {
     int halfSize = (int)(size * 0.5);
 
     int topLeft = row * (mDivisions + 1) + col;
@@ -114,10 +104,35 @@ void DiamondSquare::DiamondSquareTask(int row, int col, int size) {
     int midRow = (int)(row + halfSize);
     int midCol = (int)(col + halfSize);
 
-    mVerts[midRow][midCol].y                        = (mVerts[topLeftRow][topLeftCol].y + mVerts[topLeftRow][topLeftCol + size].y + mVerts[topLeftRow][topLeftCol].y + mVerts[botLeftRow][botLeftCol + size].y) * 0.25 + GetRandomIntInRange(-mHeight, mHeight);
+    mVerts[midRow][midCol].y                        =
+        (   mVerts[topLeftRow][topLeftCol].y +
+            mVerts[topLeftRow][topLeftCol + size].y +
+            mVerts[topLeftRow][topLeftCol].y +
+            mVerts[botLeftRow][botLeftCol + size].y
+        ) * 0.25 + GetRandomDoubleInRange(-offset, offset);
 
-    mVerts[topLeftRow][topLeftCol + halfSize].y     = (mVerts[topLeftRow][topLeftCol].y + mVerts[topLeftRow][topLeftCol + size].y + mVerts[midRow][midCol].y) / 3 + GetRandomIntInRange(-mHeight, mHeight);
-    mVerts[midRow][midCol - halfSize].y             = (mVerts[topLeftRow][topLeftCol].y + mVerts[botLeftRow][botLeftCol].y + mVerts[midRow][midCol].y) / 3 + GetRandomIntInRange(-mHeight, mHeight);
-    mVerts[midRow][midCol + halfSize].y             = (mVerts[topLeftRow][topLeftCol + size].y + mVerts[botLeftRow][botLeftCol + size].y + mVerts[midRow][midCol].y) / 3 + GetRandomIntInRange(-mHeight, mHeight);
-    mVerts[botLeftRow][botLeftCol + halfSize].y     = (mVerts[botLeftRow][botLeftCol].y + mVerts[botLeftRow][botLeftCol + size].y + mVerts[midRow][midCol].y) / 3 + GetRandomIntInRange(-mHeight, mHeight);
+    mVerts[topLeftRow][topLeftCol + halfSize].y     = (mVerts[topLeftRow][topLeftCol].y + mVerts[topLeftRow][topLeftCol + size].y + mVerts[midRow][midCol].y) / 3 + GetRandomDoubleInRange(-offset, offset);
+    mVerts[midRow][midCol - halfSize].y             = (mVerts[topLeftRow][topLeftCol].y + mVerts[botLeftRow][botLeftCol].y + mVerts[midRow][midCol].y) / 3 + GetRandomDoubleInRange(-offset, offset);
+    mVerts[midRow][midCol + halfSize].y             = (mVerts[topLeftRow][topLeftCol + size].y + mVerts[botLeftRow][botLeftCol + size].y + mVerts[midRow][midCol].y) / 3 + GetRandomDoubleInRange(-offset, offset);
+    mVerts[botLeftRow][botLeftCol + halfSize].y     = (mVerts[botLeftRow][botLeftCol].y + mVerts[botLeftRow][botLeftCol + size].y + mVerts[midRow][midCol].y) / 3 + GetRandomDoubleInRange(-offset, offset);
+}
+
+void DiamondSquare::WriteHeightMapToFile(const QString filePath) {
+    QFile file(filePath);
+        if(file.open(QIODevice::WriteOnly | QIODevice::Text)){
+            // We're going to streaming text to the file
+            QTextStream out(&file);
+
+            out << mVerts.size() << endl;
+
+            for (auto& row: mVerts) {
+                out << endl;
+                for (auto& col : row) {
+                    out << col.x << " " << col.y << " " << col.z << endl;
+                }
+            }
+
+            file.close();
+            qDebug() << "WriteHeigthtMapToFile: Writing finished";
+        }
 }

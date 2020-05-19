@@ -3,7 +3,9 @@
 #include <cstdio>
 #include <vector>
 #include <cstdlib>
-#include <fstream>
+#include <QFile>
+#include <QTextStream>
+#include<QDebug>
 #include "vector3.h"
 #include "vector2.h"
 
@@ -11,14 +13,14 @@ using namespace std;
 
 class DiamondSquare {
 public:
-    DiamondSquare(int divisions, int size, double height);
+    DiamondSquare(const int divisions, const double size, const double height);
     ~DiamondSquare();
     void CreateHeightMap();
-    void WriteHeightMapToFile(ofstream& out);
+    void WriteHeightMapToFile(const QString filePath);
 
 private:
     int mDivisions;
-    int mSize;
+    double mSize;
     double mHeight;
 
     vector<vector<Vector3>> mVerts;
@@ -26,9 +28,9 @@ private:
     vector<int> tris;
     int mVertCount;
 
-    void DiamondSquareTask(int row, int col, int size);
+    void DiamondSquareTask(int row, int col, int size, double offset);
     bool IsPowerOfTwo(int x);
     int GetPowerOfTwoUpper(unsigned int x);
-    int GetRandomIntInRange(double from, double to);
+    double GetRandomDoubleInRange(double from, double to);
 };
 
