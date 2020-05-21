@@ -5,32 +5,62 @@
 #include <cstdlib>
 #include <QFile>
 #include <QTextStream>
-#include<QDebug>
+#include <QDebug>
+#include <QThread>
+#include <QFuture>
+#include <QtConcurrent/QtConcurrentRun>
+#include <QtConcurrent/QtConcurrentMap>
+#include <QFutureWatcher>
+#include <iostream>
+
 #include "vector3.h"
 #include "vector2.h"
 
 using namespace std;
+using namespace QtConcurrent;
+
+struct ThreadWorkInput {
+    Vector3** data;
+    unsigned int rowFrom;
+    unsigned int rowTo;
+    unsigned int numSquares;
+    unsigned int squareSize;
+    double height;
+};
+
+struct DiamondSquareTaskInput{
+    Vector3** data;
+    unsigned int row;
+    unsigned int col;
+    unsigned int numSquares;
+    unsigned int squareSize;
+    double height;
+};
 
 class DiamondSquare {
 public:
-    DiamondSquare(const int divisions, const double size, const double height);
+    DiamondSquare(const unsigned int divisions, const double size, const double height);
     ~DiamondSquare();
     void CreateHeightMap();
+    void CreateHeightMapByThreads();
     void WriteHeightMapToFile(const QString filePath);
 
 private:
-    int mDivisions;
+    unsigned int mDivisions;
     double mSize;
     double mHeight;
 
-    vector<vector<Vector3>> mVerts;
-    vector<vector<Vector2>> uvs;
+    Vector3** mVerts;
+    Vector2** uvs;
     vector<int> tris;
     int mVertCount;
 
-    void DiamondSquareTask(int row, int col, int size, double offset);
-    bool IsPowerOfTwo(int x);
-    int GetPowerOfTwoUpper(unsigned int x);
-    double GetRandomDoubleInRange(double from, double to);
+    static void ThreadWork(const ThreadWorkInput& task);
+    static void DiamondSquareThreadTask(const DiamondSquareTaskInput& task);
+
+    void DiamondSquareTask(unsigned int row, unsigned int col, unsigned int size, double offset);
+    bool IsPowerOfTwo(unsigned int x);
+    unsigned int GetPowerOfTwoUpper(unsigned int x);
+    static double GetRandomDoubleInRange(double from, double to);
 };
 
