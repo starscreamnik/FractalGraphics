@@ -1,48 +1,60 @@
 #include "diamondsquare.h"
 
-DiamondSquare::DiamondSquare(const unsigned int divisions, const double size, const double height) {
+using namespace QtDataVisualization;
+
+DiamondSquare::DiamondSquare
+(
+    const unsigned int divisions, const float size, const float height
+) {
     mDivisions = IsPowerOfTwo(divisions) ? divisions : GetPowerOfTwoUpper(divisions);
-    mSize = size >= 1.0 ? size : 10.0;
-    mHeight = height >= 1.0 ? height : 10.0;
+    mSize = size >= 1.0f ? size : 10.0f;
+    mHeight = height >= 1.0f ? height : 10.0f;
 
-    mVerts = new Vector3*[mDivisions + 1];
+    init();
+}
 
-    double halfSize = mSize / 2;
-    double divisionSize = mSize / static_cast<double>(mDivisions);
+DiamondSquare::~DiamondSquare() {}
+
+
+void DiamondSquare::init(){
+    mVerts = new QVector3D*[mDivisions + 1];
+
+    float halfSize = mSize / 2;
+    float divisionSize = mSize / static_cast<float>(mDivisions);
 
     for (unsigned int i = 0; i <= mDivisions; i++) {
-        mVerts[i] = new Vector3[mDivisions + 1];
+        mVerts[i] = new QVector3D[mDivisions + 1];
         for (unsigned int j = 0; j <= mDivisions; j++) {
-            mVerts[i][j].x = -halfSize + j * divisionSize;
-            mVerts[i][j].y = 0.0;
-            mVerts[i][j].z = halfSize - i * divisionSize;
+            mVerts[i][j].setX(-halfSize + j * divisionSize);
+            mVerts[i][j].setY(0.0f);
+            mVerts[i][j].setZ(halfSize - i * divisionSize);
         }
     }
 }
 
-DiamondSquare::~DiamondSquare() {
-}
+QSurfaceDataArray* DiamondSquare::GetData(){
+    QSurfaceDataArray* data = new QSurfaceDataArray;
+    QSurfaceDataRow* dataRow;
 
-bool DiamondSquare::IsPowerOfTwo(unsigned int x) {
-    return (x != 0) && ((x & (x - 1)) == 0);
-}
+    for (u_int i = 0; i < mDivisions+1; i++){
+        dataRow = new QSurfaceDataRow;
+        for (u_int j = 0; j < mDivisions+1; j++){
+            *dataRow << mVerts[i][j];
+        }
+        *data << dataRow;
+        dataRow = nullptr;
+    }
 
-unsigned int DiamondSquare::GetPowerOfTwoUpper(unsigned int x) {
-    return static_cast<unsigned int>(pow(2, ceil(log(x) / log(2))));
-}
-
-double DiamondSquare::GetRandomDoubleInRange(double from, double to) {
-    double f = static_cast<double>(rand()) / RAND_MAX;
-    return from + f * (to - from);
+    return data;
 }
 
 void DiamondSquare::CreateHeightMap() {
     qDebug() << "DiamondSquare:CreateHeightMap -> run" << endl;
 
-    mVerts[0][0].y                      = GetRandomDoubleInRange(-mHeight, mHeight);
-    mVerts[0][mDivisions].y             = GetRandomDoubleInRange(-mHeight, mHeight);
-    mVerts[mDivisions][0].y             = GetRandomDoubleInRange(-mHeight, mHeight);
-    mVerts[mDivisions][mDivisions].y    = GetRandomDoubleInRange(-mHeight, mHeight);
+    mVerts[0][0]                    .setY(GetRandomFloatInRange(-mHeight, mHeight));
+    mVerts[0][mDivisions]           .setY(GetRandomFloatInRange(-mHeight, mHeight));
+    mVerts[mDivisions][0]           .setY(GetRandomFloatInRange(-mHeight, mHeight));
+    mVerts[mDivisions][mDivisions]  .setY(GetRandomFloatInRange(-mHeight, mHeight));
 
     int iterations = static_cast<int>(log2(mDivisions));
     int numSquares = 1;
@@ -62,12 +74,12 @@ void DiamondSquare::CreateHeightMap() {
         }
         numSquares *= 2;
         squareSize /= 2;
-        mHeight *= 0.5;
+        mHeight *= 0.5f;
     }
 }
 
 void DiamondSquare::DiamondSquareTask(
-    unsigned int row, unsigned int col, unsigned int size, double offset
+    unsigned int row, unsigned int col, unsigned int size, float offset
 ) {
     unsigned int halfSize = size / 2;
 
@@ -80,26 +92,28 @@ void DiamondSquare::DiamondSquareTask(
     unsigned int midRow = row + halfSize;
     unsigned int midCol = col + halfSize;
 
-    mVerts[midRow][midCol].y                        =
-    (   mVerts[topLeftRow][topLeftCol].y +
-        mVerts[topLeftRow][topLeftCol + size].y +
-        mVerts[topLeftRow][topLeftCol].y +
-        mVerts[botLeftRow][botLeftCol + size].y
-    ) * 0.25 + GetRandomDoubleInRange(-offset, offset);
+    mVerts[midRow][midCol].setY
+    (
+        (   mVerts[topLeftRow][topLeftCol].y() +
+            mVerts[topLeftRow][topLeftCol + size].y() +
+            mVerts[topLeftRow][topLeftCol].y() +
+            mVerts[botLeftRow][botLeftCol + size].y()
+        ) * 0.25f + GetRandomFloatInRange(-offset, offset)
+    );
 
-    mVerts[topLeftRow][topLeftCol + halfSize].y     = (mVerts[topLeftRow][topLeftCol].y + mVerts[topLeftRow][topLeftCol + size].y + mVerts[midRow][midCol].y) / 3 + GetRandomDoubleInRange(-offset, offset);
-    mVerts[midRow][midCol - halfSize].y             = (mVerts[topLeftRow][topLeftCol].y + mVerts[botLeftRow][botLeftCol].y + mVerts[midRow][midCol].y) / 3 + GetRandomDoubleInRange(-offset, offset);
-    mVerts[midRow][midCol + halfSize].y             = (mVerts[topLeftRow][topLeftCol + size].y + mVerts[botLeftRow][botLeftCol + size].y + mVerts[midRow][midCol].y) / 3 + GetRandomDoubleInRange(-offset, offset);
-    mVerts[botLeftRow][botLeftCol + halfSize].y     = (mVerts[botLeftRow][botLeftCol].y + mVerts[botLeftRow][botLeftCol + size].y + mVerts[midRow][midCol].y) / 3 + GetRandomDoubleInRange(-offset, offset);
+    mVerts[topLeftRow][topLeftCol + halfSize]   .setY( (mVerts[topLeftRow][topLeftCol].y() + mVerts[topLeftRow][topLeftCol + size].y() + mVerts[midRow][midCol].y()) / 3 + GetRandomFloatInRange(-offset, offset) );
+    mVerts[midRow][midCol - halfSize]           .setY( (mVerts[topLeftRow][topLeftCol].y() + mVerts[botLeftRow][botLeftCol].y() + mVerts[midRow][midCol].y()) / 3 + GetRandomFloatInRange(-offset, offset) );
+    mVerts[midRow][midCol + halfSize]           .setY( (mVerts[topLeftRow][topLeftCol + size].y() + mVerts[botLeftRow][botLeftCol + size].y() + mVerts[midRow][midCol].y()) / 3 + GetRandomFloatInRange(-offset, offset) );
+    mVerts[botLeftRow][botLeftCol + halfSize]   .setY( (mVerts[botLeftRow][botLeftCol].y() + mVerts[botLeftRow][botLeftCol + size].y() + mVerts[midRow][midCol].y()) / 3 + GetRandomFloatInRange(-offset, offset) );
 }
 
 void DiamondSquare::CreateHeightMapByThreads(){
     qDebug() << "DiamondSquare:CreateHeightMapByThreads -> run" << endl;
 
-    mVerts[0][0].y                      = GetRandomDoubleInRange(-mHeight, mHeight);
-    mVerts[0][mDivisions].y             = GetRandomDoubleInRange(-mHeight, mHeight);
-    mVerts[mDivisions][0].y             = GetRandomDoubleInRange(-mHeight, mHeight);
-    mVerts[mDivisions][mDivisions].y    = GetRandomDoubleInRange(-mHeight, mHeight);
+    mVerts[0][0]                      .setY(GetRandomFloatInRange(-mHeight, mHeight));
+    mVerts[0][mDivisions]             .setY(GetRandomFloatInRange(-mHeight, mHeight));
+    mVerts[mDivisions][0]             .setY(GetRandomFloatInRange(-mHeight, mHeight));
+    mVerts[mDivisions][mDivisions]    .setY(GetRandomFloatInRange(-mHeight, mHeight));
 
     static const unsigned int THREAD_COUNT = static_cast<unsigned int>(QThread::idealThreadCount());
     qDebug() << "Thread count:" << THREAD_COUNT << endl;
@@ -121,7 +135,7 @@ void DiamondSquare::CreateHeightMapByThreads(){
 
         numSquares *= 2;
         squareSize /= 2;
-        mHeight *= 0.5;
+        mHeight *= 0.5f;
         tasks.clear();
     }
 }
@@ -151,7 +165,7 @@ void DiamondSquare::ThreadWork(const ThreadWorkInput& task){
 void DiamondSquare::DiamondSquareThreadTask(const DiamondSquareTaskInput& task) {
     unsigned int halfSize = task.squareSize / 2;
     unsigned int size = task.squareSize;
-    double offset = task.height;
+    float offset = task.height;
 
     unsigned int topLeftRow = task.row;
     unsigned int topLeftCol = task.col;
@@ -162,17 +176,19 @@ void DiamondSquare::DiamondSquareThreadTask(const DiamondSquareTaskInput& task) 
     unsigned int midRow = task.row + halfSize;
     unsigned int midCol = task.col + halfSize;
 
-    task.data[midRow][midCol].y                        =
-    (   task.data[topLeftRow][topLeftCol].y +
-        task.data[topLeftRow][topLeftCol + size].y +
-        task.data[topLeftRow][topLeftCol].y +
-        task.data[botLeftRow][botLeftCol + size].y
-    ) * 0.25 + GetRandomDoubleInRange(-offset, offset);
+    task.data[midRow][midCol].setY
+    (
+        (   task.data[topLeftRow][topLeftCol].y() +
+            task.data[topLeftRow][topLeftCol + size].y() +
+            task.data[topLeftRow][topLeftCol].y() +
+            task.data[botLeftRow][botLeftCol + size].y()
+        ) * 0.25f + GetRandomFloatInRange(-offset, offset)
+    );
 
-    task.data[topLeftRow][topLeftCol + halfSize].y     = (task.data[topLeftRow][topLeftCol].y + task.data[topLeftRow][topLeftCol + size].y + task.data[midRow][midCol].y) / 3 + GetRandomDoubleInRange(-offset, offset);
-    task.data[midRow][midCol - halfSize].y             = (task.data[topLeftRow][topLeftCol].y + task.data[botLeftRow][botLeftCol].y + task.data[midRow][midCol].y) / 3 + GetRandomDoubleInRange(-offset, offset);
-    task.data[midRow][midCol + halfSize].y             = (task.data[topLeftRow][topLeftCol + size].y + task.data[botLeftRow][botLeftCol + size].y + task.data[midRow][midCol].y) / 3 + GetRandomDoubleInRange(-offset, offset);
-    task.data[botLeftRow][botLeftCol + halfSize].y     = (task.data[botLeftRow][botLeftCol].y + task.data[botLeftRow][botLeftCol + size].y + task.data[midRow][midCol].y) / 3 + GetRandomDoubleInRange(-offset, offset);
+    task.data[topLeftRow][topLeftCol + halfSize].setY( (task.data[topLeftRow][topLeftCol].y() + task.data[topLeftRow][topLeftCol + size].y() + task.data[midRow][midCol].y()) / 3 + GetRandomFloatInRange(-offset, offset) );
+    task.data[midRow][midCol - halfSize]        .setY( (task.data[topLeftRow][topLeftCol].y() + task.data[botLeftRow][botLeftCol].y() + task.data[midRow][midCol].y()) / 3 + GetRandomFloatInRange(-offset, offset) );
+    task.data[midRow][midCol + halfSize]        .setY( (task.data[topLeftRow][topLeftCol + size].y() + task.data[botLeftRow][botLeftCol + size].y() + task.data[midRow][midCol].y()) / 3 + GetRandomFloatInRange(-offset, offset) );
+    task.data[botLeftRow][botLeftCol + halfSize].setY( (task.data[botLeftRow][botLeftCol].y() + task.data[botLeftRow][botLeftCol + size].y() + task.data[midRow][midCol].y()) / 3 + GetRandomFloatInRange(-offset, offset) );
 }
 
 void DiamondSquare::WriteHeightMapToFile(const QString filePath) {
@@ -187,11 +203,28 @@ void DiamondSquare::WriteHeightMapToFile(const QString filePath) {
             out << endl;
             for (unsigned int j=0; j < (mDivisions+1); j++) {
                 auto item = mVerts[i][j];
-                out << item.x << " " << item.y << " " << item.z << endl;
+                out << item.x() << " " << item.y() << " " << item.z() << endl;
             }
         }
 
         file.close();
         qDebug() << "WriteHeigthtMapToFile: Writing finished";
     }
+}
+
+bool DiamondSquare::IsPowerOfTwo(unsigned int x) {
+    return (x != 0) && ((x & (x - 1)) == 0);
+}
+
+unsigned int DiamondSquare::GetPowerOfTwoUpper(unsigned int x) {
+    return static_cast<unsigned int>(pow(2, ceil(log(x) / log(2))));
+}
+
+float DiamondSquare::GetRandomFloatInRange(float from, float to) {
+    float f = static_cast<float>(rand()) / RAND_MAX;
+    return from + f * (to - from);
+}
+
+unsigned int DiamondSquare::GetSize()const{
+    return mDivisions;
 }

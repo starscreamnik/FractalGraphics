@@ -5,8 +5,8 @@
 class Vector2{
 public:
     Vector2();
-    double x;
-    double y;
+    float x;
+    float y;
 };
 
 #endif // VECTOR2_H

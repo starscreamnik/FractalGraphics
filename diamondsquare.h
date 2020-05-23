@@ -12,55 +12,65 @@
 #include <QtConcurrent/QtConcurrentMap>
 #include <QFutureWatcher>
 #include <iostream>
+#include <QtDataVisualization/Q3DSurface>
+#include <QtDataVisualization/QSurfaceDataProxy>
+#include <QtDataVisualization/QHeightMapSurfaceDataProxy>
+#include <QtDataVisualization/QSurface3DSeries>
+#include <QtDataVisualization/QSurfaceDataRow>
+#include <QtDataVisualization/QSurfaceDataArray>
 
 #include "vector3.h"
-#include "vector2.h"
 
 using namespace std;
 using namespace QtConcurrent;
+using namespace QtDataVisualization;
 
 struct ThreadWorkInput {
-    Vector3** data;
+    QVector3D** data;
     unsigned int rowFrom;
     unsigned int rowTo;
     unsigned int numSquares;
     unsigned int squareSize;
-    double height;
+    float height;
 };
 
 struct DiamondSquareTaskInput{
-    Vector3** data;
+    QVector3D** data;
     unsigned int row;
     unsigned int col;
     unsigned int numSquares;
     unsigned int squareSize;
-    double height;
+    float height;
 };
 
 class DiamondSquare {
 public:
-    DiamondSquare(const unsigned int divisions, const double size, const double height);
+    DiamondSquare(const unsigned int divisions, const float size, const float height);
     ~DiamondSquare();
     void CreateHeightMap();
     void CreateHeightMapByThreads();
+    QSurfaceDataArray* GetData();
     void WriteHeightMapToFile(const QString filePath);
+    u_int GetSize()const;
+
+    typedef unsigned int u_int;
 
 private:
     unsigned int mDivisions;
-    double mSize;
-    double mHeight;
+    float mSize;
+    float mHeight;
+    bool IsPowerOfTwo(unsigned int x);
+    unsigned int GetPowerOfTwoUpper(unsigned int x);
 
-    Vector3** mVerts;
-    Vector2** uvs;
-    vector<int> tris;
-    int mVertCount;
+    QVector3D** mVerts;
+
+    void init();
+    static float GetRandomFloatInRange(float from, float to);
+
+    void DiamondSquareTask(unsigned int row, unsigned int col, unsigned int size, float offset);
 
     static void ThreadWork(const ThreadWorkInput& task);
     static void DiamondSquareThreadTask(const DiamondSquareTaskInput& task);
 
-    void DiamondSquareTask(unsigned int row, unsigned int col, unsigned int size, double offset);
-    bool IsPowerOfTwo(unsigned int x);
-    unsigned int GetPowerOfTwoUpper(unsigned int x);
-    static double GetRandomDoubleInRange(double from, double to);
 };
 

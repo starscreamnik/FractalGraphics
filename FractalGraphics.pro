@@ -5,9 +5,11 @@
 #-------------------------------------------------
 
 QT       += core gui \
-            concurrent
+            concurrent \
+            widgets \
+            datavisualization
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+requires(qtConfig(combobox))
 
 TARGET = FractalGraphics
 TEMPLATE = app
@@ -27,16 +29,18 @@ CONFIG += c++11
 
 SOURCES += \
         main.cpp \
-        mainwindow.cpp \
     diamondsquare.cpp \
     vector2.cpp \
-    vector3.cpp
+    vector3.cpp \
+    surfacegraph.cpp \
+    spoiler.cpp
 
 HEADERS += \
-        mainwindow.h \
     diamondsquare.h \
     vector2.h \
-    vector3.h
+    vector3.h \
+    surfacegraph.h \
+    spoiler.h
 
 FORMS += \
         mainwindow.ui

@@ -5,9 +5,9 @@
 class Vector3{
 public:
     Vector3();
-    double x;
-    double y;
-    double z;
+    float x;
+    float y;
+    float z;
 };
 
 #endif // VECTOR3_H
