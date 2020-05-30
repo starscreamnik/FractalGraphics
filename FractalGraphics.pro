@@ -30,17 +30,15 @@ CONFIG += c++11
 SOURCES += \
         main.cpp \
     diamondsquare.cpp \
-    vector2.cpp \
-    vector3.cpp \
-    surfacegraph.cpp \
-    spoiler.cpp
+    spoiler.cpp \
+    surfaceController.cpp \
+    surfaceView.cpp
 
 HEADERS += \
     diamondsquare.h \
-    vector2.h \
-    vector3.h \
-    surfacegraph.h \
-    spoiler.h
+    spoiler.h \
+    surfaceController.h \
+    surfaceView.h
 
 FORMS += \
         mainwindow.ui
