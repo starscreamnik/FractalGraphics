@@ -1,4 +1,4 @@
-#include "surfaceController.h"
+#include "surfacegraph.h"
 
 #include <QtDataVisualization/QValue3DAxis>
 #include <QtDataVisualization/Q3DTheme>
@@ -6,10 +6,13 @@
 
 const int sampleCountX = 100;
 const int sampleCountZ = 100;
+const int heightMapGridStepX = 10;
+const int heightMapGridStepZ = 10;
 const float sampleMin = -100.0f;
 const float sampleMax = 100.0f;
 
-SurfaceController::SurfaceController(Q3DSurface *surface, int divisions, float size, float height, QListWidget* logs):
+SurfaceGraph::SurfaceGraph(Q3DSurface *surface, unsigned int divisions, float size, float height, QListWidget* logs):
+    heightMapGenerator(nullptr),
     heightmapDivisions(divisions),
     heightmapSize(size),
     heightmapYAmplitude(height),
@@ -17,8 +20,6 @@ SurfaceController::SurfaceController(Q3DSurface *surface, int divisions, float s
     series(nullptr),
     logs(logs)
 {
-    heightMapGenerator = new DiamondSquare(divisions, size, height);
-
     graph->setAxisX(new QValue3DAxis);
     graph->setAxisY(new QValue3DAxis);
     graph->setAxisZ(new QValue3DAxis);
@@ -28,29 +29,30 @@ SurfaceController::SurfaceController(Q3DSurface *surface, int divisions, float s
     setAxisZRange(-100, 100);
 }
 
-SurfaceController::~SurfaceController()
+SurfaceGraph::~SurfaceGraph()
 {
     delete graph;
 }
 
-void SurfaceController::calculate(){
+void SurfaceGraph::calculate(){
+    if (heightMapGenerator != nullptr) {
+        delete heightMapGenerator;
+        heightMapGenerator = nullptr;
+    }
+
     if (series != nullptr){
         graph->removeSeries(series);
         delete series;
         series = nullptr;
     }
 
-    qDebug() << "generator ref: " << heightMapGenerator << endl;
-    qDebug() << "divisions: " << heightMapGenerator->GetSize() << endl;
-    heightMapGenerator->Resize(heightmapDivisions, heightmapSize, heightmapYAmplitude);
+    heightMapGenerator = new DiamondSquare(heightmapDivisions, heightmapSize, heightmapYAmplitude);
 
     QTime time;
     time.start();
-
     (heightMapGenerator->*methodPointer)();
 
     logs->addItem(methodName + ": " + QString::number(static_cast<double>(time.elapsed()/1000.0)));
-    logs->scrollToBottom();
 
     auto proxy = new QSurfaceDataProxy;
     proxy->resetArray(heightMapGenerator->GetData());
@@ -77,35 +79,23 @@ void SurfaceController::calculate(){
     m_axisMaxSliderZ->setValue(sampleCountZ - 1);
 }
 
-void SurfaceController::setAxisXRange(float min, float max)
+void SurfaceGraph::setAxisXRange(float min, float max)
 {
     graph->axisX()->setRange(min, max);
 }
 
-void SurfaceController::setAxisYRange(float min, float max)
+void SurfaceGraph::setAxisYRange(float min, float max)
 {
     graph->axisY()->setRange(min, max);
 }
 
-void SurfaceController::setAxisZRange(float min, float max)
+void SurfaceGraph::setAxisZRange(float min, float max)
 {
     graph->axisZ()->setRange(min, max);
 }
 
-void SurfaceController::setGradient()
-{
-    QLinearGradient gr;
-    gr.setColorAt(0.0, Qt::blue);
-    gr.setColorAt(0.25, Qt::green);
-    gr.setColorAt(0.45, Qt::green);
-    gr.setColorAt(0.45, Qt::yellow);
-    gr.setColorAt(0.9, Qt::white);
 
-    graph->seriesList().at(0)->setBaseGradient(gr);
-    graph->seriesList().at(0)->setColorStyle(Q3DTheme::ColorStyleRangeGradient);
-}
-
-void SurfaceController::adjustXMin(int min)
+void SurfaceGraph::adjustXMin(int min)
 {
     float minX = m_stepX * float(min) + m_rangeMinX;
 
@@ -119,7 +109,7 @@ void SurfaceController::adjustXMin(int min)
     setAxisXRange(minX, maxX);
 }
 
-void SurfaceController::adjustXMax(int max)
+void SurfaceGraph::adjustXMax(int max)
 {
     float maxX = m_stepX * float(max) + m_rangeMinX;
 
@@ -133,7 +123,7 @@ void SurfaceController::adjustXMax(int max)
     setAxisXRange(minX, maxX);
 }
 
-void SurfaceController::adjustZMin(int min)
+void SurfaceGraph::adjustZMin(int min)
 {
     float minZ = m_stepZ * float(min) + m_rangeMinZ;
 
@@ -147,7 +137,7 @@ void SurfaceController::adjustZMin(int min)
     setAxisZRange(minZ, maxZ);
 }
 
-void SurfaceController::adjustZMax(int max)
+void SurfaceGraph::adjustZMax(int max)
 {
     float maxX = m_stepZ * float(max) + m_rangeMinZ;
 
@@ -159,4 +149,17 @@ void SurfaceController::adjustZMax(int max)
     float minX = m_stepZ * min + m_rangeMinZ;
 
     setAxisZRange(minX, maxX);
+}
+
+void SurfaceGraph::setGradient()
+{
+    QLinearGradient gr;
+    gr.setColorAt(0.0, Qt::blue);
+    gr.setColorAt(0.25, Qt::green);
+    gr.setColorAt(0.45, Qt::green);
+    gr.setColorAt(0.45, Qt::yellow);
+    gr.setColorAt(0.9, Qt::white);
+
+    graph->seriesList().at(0)->setBaseGradient(gr);
+    graph->seriesList().at(0)->setColorStyle(Q3DTheme::ColorStyleRangeGradient);
 }

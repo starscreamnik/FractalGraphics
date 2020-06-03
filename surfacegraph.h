@@ -1,5 +1,5 @@
-#ifndef SURFACECONTROLLER_H
-#define SURFACECONTROLLER_H
+#ifndef SURFACEGRAPH_H
+#define SURFACEGRAPH_H
 
 #include <QtDataVisualization/Q3DSurface>
 #include <QtDataVisualization/QSurfaceDataProxy>
@@ -13,19 +13,24 @@
 
 #include "diamondsquare.h"
 
+
 using namespace QtDataVisualization;
 
-class SurfaceController: public QMainWindow{
+namespace Ui {
+    class SurfaceGraph;
+}
+
+class SurfaceGraph: public QMainWindow{
     Q_OBJECT
 
 public:
-    explicit SurfaceController(Q3DSurface *surface, int divisions, float size, float height, QListWidget* logs);
-    ~SurfaceController();
+    explicit SurfaceGraph(Q3DSurface *surface, unsigned int divisions, float size, float height, QListWidget* logs);
+    ~SurfaceGraph();
 
     void toggleSequenceMethod()     { methodPointer = &DiamondSquare::CreateHeightMap; methodName="Sequence"; }
     void toggleQTConcurrentMethod() { methodPointer = &DiamondSquare::CreateHeightMapByThreads; methodName="QTConcurrent"; }
 
-    void setSurfaceDivisions(int value) { heightmapDivisions = value; }
+    void setSurfaceDivisions(int value) { heightmapDivisions = static_cast<unsigned int>(value); }
     void setSurfaceSize(double value)   { heightmapSize = static_cast<float>(value); }
     void setSurfaceHeight(double value) { heightmapYAmplitude = static_cast<float>(value); }
 
@@ -42,9 +47,10 @@ public:
     void calculate();
 
 private:
+    Ui::SurfaceGraph *ui;
     DiamondSquare* heightMapGenerator;
     void (DiamondSquare::* methodPointer)();
-    int heightmapDivisions;
+    unsigned int heightmapDivisions;
     float heightmapSize;
     float heightmapYAmplitude;
 
@@ -54,8 +60,6 @@ private:
     QSurface3DSeries *series;
     QListWidget* logs;
 
-    int m_heightMapWidth;
-    int m_heightMapHeight;
 
     QSlider *m_axisMinSliderX;
     QSlider *m_axisMaxSliderX;
@@ -65,6 +69,8 @@ private:
     float m_rangeMinZ;
     float m_stepX;
     float m_stepZ;
+    int m_heightMapWidth;
+    int m_heightMapHeight;
 
     void setAxisXRange(float min, float max);
     void setAxisYRange(float min, float max);
@@ -74,4 +80,4 @@ private:
 
 };
 
-#endif // SURFACECONTROLLER_H
+#endif // SURFACEGRAPH_H
